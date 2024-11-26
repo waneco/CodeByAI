@@ -16,6 +16,12 @@
 '   このスクリプトはShift-JIS形式で保存してください。
 '   他の形式（UTF-8など）で保存すると文字化けが発生し、正しく動作しません。
 ' ******************************
+' ******************************
+' バージョン: 1.1
+' 概要:
+'   ドラッグ＆ドロップされたExcelファイル（.xlsx形式）を処理します。
+'   シート「Sheet2」を対象に指定の操作を実行します。
+' ******************************
 
 ' ドラッグ＆ドロップされたファイルを取得
 Set args = WScript.Arguments
@@ -69,12 +75,11 @@ If sheet Is Nothing Then
     WScript.Quit
 End If
 
-' セルC5の値を取得してセルD6に設定
+' セルの値を移動
 On Error Resume Next
-valueC5 = sheet.Range("C5").Value
-sheet.Range("D6").Value = valueC5
+sheet.Range("D6").Value = sheet.Range("C5").Value
 If Err.Number <> 0 Then
-    MsgBox "セルの操作中にエラーが発生しました。", vbCritical, "エラー"
+    MsgBox "セルの値移動中にエラーが発生しました。", vbCritical, "エラー"
     workbook.Close False
     excelApp.Quit
     WScript.Quit
@@ -83,9 +88,9 @@ On Error GoTo 0
 
 ' 指定された行と列を削除
 On Error Resume Next
-sheet.Rows("2:5").Delete
+sheet.Rows("1:15").Delete
+sheet.Columns("A").Delete
 sheet.Columns("C").Delete
-sheet.Columns("E").Delete
 If Err.Number <> 0 Then
     MsgBox "行または列の削除中にエラーが発生しました。", vbCritical, "エラー"
     workbook.Close False
@@ -93,6 +98,17 @@ If Err.Number <> 0 Then
     WScript.Quit
 End If
 On Error GoTo 0
+
+' 条件処理
+rowCount = sheet.UsedRange.Rows.Count
+For i = 1 To rowCount
+    JValue = sheet.Cells(i, "J").Value
+    AAValue = sheet.Cells(i, "AA").Value
+    If JValue = "田中たかし" And InStr(AAValue, "課長案件") > 0 Then
+        prefix = Split(AAValue, "課長")(0)
+        sheet.Cells(i, "J").Value = prefix
+    End If
+Next
 
 ' 保存先ファイル名を生成
 Set fso = CreateObject("Scripting.FileSystemObject")
