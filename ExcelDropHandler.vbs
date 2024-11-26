@@ -16,8 +16,12 @@
 '   このスクリプトはShift-JIS形式で保存してください。
 '   他の形式（UTF-8など）で保存すると文字化けが発生し、正しく動作しません。
 ' ******************************
-' ******************************
 ' バージョン: 1.1
+' 概要:
+'   ドラッグ＆ドロップされたExcelファイル（.xlsx形式）を処理します。
+'   シート「Sheet2」を対象に指定の操作を実行します。
+' ******************************
+' バージョン: 1.2
 ' 概要:
 '   ドラッグ＆ドロップされたExcelファイル（.xlsx形式）を処理します。
 '   シート「Sheet2」を対象に指定の操作を実行します。
@@ -74,17 +78,6 @@ If sheet Is Nothing Then
     excelApp.Quit
     WScript.Quit
 End If
-
-' セルの値を移動
-On Error Resume Next
-sheet.Range("D6").Value = sheet.Range("C5").Value
-If Err.Number <> 0 Then
-    MsgBox "セルの値移動中にエラーが発生しました。", vbCritical, "エラー"
-    workbook.Close False
-    excelApp.Quit
-    WScript.Quit
-End If
-On Error GoTo 0
 
 ' 指定された行と列を削除
 On Error Resume Next
