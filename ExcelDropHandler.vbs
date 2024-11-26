@@ -122,10 +122,8 @@ If Err.Number <> 0 Then
 End If
 On Error GoTo 0
 
-' 完了通知
-MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
-
 ' リソース解放処理
+On Error Resume Next
 If Not workbook Is Nothing Then workbook.Close False
 If Not excelApp Is Nothing Then excelApp.Quit
 Set sheet = Nothing
@@ -133,5 +131,9 @@ Set workbook = Nothing
 Set excelApp = Nothing
 Set fso = Nothing
 Set regEx = Nothing
+On Error GoTo 0
+        
+' 完了通知
+MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
 
 WScript.Quit
