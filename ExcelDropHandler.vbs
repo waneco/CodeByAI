@@ -1,6 +1,6 @@
 ' ******************************
 ' プログラム名: ExcelDropHandler.vbs
-' バージョン: 1.5
+ バージョン: 1.6
 ' 作成日: 2024年11月23日
 ' 最終更新日: 2024年11月26日
 ' 概要:
@@ -15,7 +15,12 @@
 '   このスクリプトはShift-JIS形式で保存してください。
 '   他の形式（UTF-8など）で保存すると文字化けが発生し、正しく動作しません。
 ' ******************************
-On Error Resume Next
+
+' エラー表示関数
+Sub HandleError(message)
+    MsgBox message & vbCrLf & "エラーコード: " & Err.Number, vbCritical, "エラー"
+    WScript.Quit
+End Sub
 
 ' ドラッグ＆ドロップされたファイルを取得
 Set args = WScript.Arguments
@@ -33,10 +38,10 @@ If LCase(Right(filePath, 5)) <> ".xlsx" Then
 End If
 
 ' Excelアプリケーションを起動
+On Error Resume Next
 Set excelApp = CreateObject("Excel.Application")
 If Err.Number <> 0 Then
-    MsgBox "Excelアプリケーションを起動できませんでした。", vbCritical, "エラー"
-    WScript.Quit
+    HandleError "Excelアプリケーションを起動できませんでした。"
 End If
 On Error GoTo 0
 
@@ -46,17 +51,16 @@ excelApp.Visible = False
 On Error Resume Next
 Set workbook = excelApp.Workbooks.Open(filePath)
 If Err.Number <> 0 Then
-    MsgBox "Excelファイルを開けませんでした。", vbCritical, "エラー"
-    GoTo Cleanup
+    HandleError "Excelファイルを開けませんでした。"
 End If
 On Error GoTo 0
 
 ' 正規表現を使用するための準備
 Set regEx = New RegExp
-regEx.IgnoreCase = True ' 大文字・小文字を区別しない
-regEx.Pattern = ".*eet2$" ' 正規表現: 任意の文字列で始まり、"eet2"で終わる
+regEx.IgnoreCase = True
+regEx.Pattern = ".*eet2$"
 
-' 指定されたシートを取得（正規表現で部分一致）
+' 指定されたシートを取得
 Set sheet = Nothing
 For Each ws In workbook.Sheets
     If regEx.Test(ws.Name) Then
@@ -65,25 +69,30 @@ For Each ws In workbook.Sheets
     End If
 Next
 
-' シートが見つからなかった場合の処理
+' シートが見つからなかった場合
 If sheet Is Nothing Then
-    MsgBox "指定されたパターンに一致するシートが見つかりません。", vbExclamation, "エラー"
-    GoTo Cleanup
+    HandleError "指定されたパターンに一致するシートが見つかりません。"
 End If
 
 ' 指定された行と列を削除
 On Error Resume Next
 sheet.Rows("2:15").Delete
+If Err.Number <> 0 Then
+    HandleError "行の削除中にエラーが発生しました。"
+End If
 sheet.Columns("A").Delete
+If Err.Number <> 0 Then
+    HandleError "A列の削除中にエラーが発生しました。"
+End If
 sheet.Columns("C").Delete
 If Err.Number <> 0 Then
-    MsgBox "行または列の削除中にエラーが発生しました。", vbCritical, "エラー"
-    GoTo Cleanup
+    HandleError "C列の削除中にエラーが発生しました。"
 End If
 On Error GoTo 0
 
 ' 条件処理
 rowCount = sheet.UsedRange.Rows.Count
+On Error Resume Next
 For i = 1 To rowCount
     JValue = sheet.Cells(i, "J").Value
     AAValue = sheet.Cells(i, "AA").Value
@@ -91,7 +100,11 @@ For i = 1 To rowCount
         prefix = Split(AAValue, "課長")(0)
         sheet.Cells(i, "J").Value = prefix
     End If
+    If Err.Number <> 0 Then
+        HandleError "条件処理中にエラーが発生しました。"
+    End If
 Next
+On Error GoTo 0
 
 ' 保存先ファイル名を生成
 Set fso = CreateObject("Scripting.FileSystemObject")
@@ -105,8 +118,7 @@ newFileName = folderPath & "\" & fileName & "_" & currentDateTime & ".xlsx"
 On Error Resume Next
 workbook.SaveAs newFileName
 If Err.Number <> 0 Then
-    MsgBox "ファイルの保存中にエラーが発生しました。", vbCritical, "エラー"
-    GoTo Cleanup
+    HandleError "ファイルの保存中にエラーが発生しました。"
 End If
 On Error GoTo 0
 
@@ -114,7 +126,6 @@ On Error GoTo 0
 MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
 
 ' リソース解放処理
-Cleanup:
 If Not workbook Is Nothing Then workbook.Close False
 If Not excelApp Is Nothing Then excelApp.Quit
 Set sheet = Nothing
