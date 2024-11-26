@@ -1,7 +1,6 @@
 ' ******************************
 ' プログラム名: ExcelDropHandler.vbs
-' バージョン: 1.4
-' 作成者: あなたの名前
+' バージョン: 1.5
 ' 作成日: 2024年11月23日
 ' 最終更新日: 2024年11月26日
 ' 概要:
@@ -16,6 +15,7 @@
 '   このスクリプトはShift-JIS形式で保存してください。
 '   他の形式（UTF-8など）で保存すると文字化けが発生し、正しく動作しません。
 ' ******************************
+On Error Resume Next
 
 ' ドラッグ＆ドロップされたファイルを取得
 Set args = WScript.Arguments
@@ -33,7 +33,6 @@ If LCase(Right(filePath, 5)) <> ".xlsx" Then
 End If
 
 ' Excelアプリケーションを起動
-On Error Resume Next
 Set excelApp = CreateObject("Excel.Application")
 If Err.Number <> 0 Then
     MsgBox "Excelアプリケーションを起動できませんでした。", vbCritical, "エラー"
@@ -48,8 +47,7 @@ On Error Resume Next
 Set workbook = excelApp.Workbooks.Open(filePath)
 If Err.Number <> 0 Then
     MsgBox "Excelファイルを開けませんでした。", vbCritical, "エラー"
-    excelApp.Quit
-    WScript.Quit
+    GoTo Cleanup
 End If
 On Error GoTo 0
 
@@ -70,9 +68,7 @@ Next
 ' シートが見つからなかった場合の処理
 If sheet Is Nothing Then
     MsgBox "指定されたパターンに一致するシートが見つかりません。", vbExclamation, "エラー"
-    workbook.Close False
-    excelApp.Quit
-    WScript.Quit
+    GoTo Cleanup
 End If
 
 ' 指定された行と列を削除
@@ -82,9 +78,7 @@ sheet.Columns("A").Delete
 sheet.Columns("C").Delete
 If Err.Number <> 0 Then
     MsgBox "行または列の削除中にエラーが発生しました。", vbCritical, "エラー"
-    workbook.Close False
-    excelApp.Quit
-    WScript.Quit
+    GoTo Cleanup
 End If
 On Error GoTo 0
 
@@ -112,22 +106,21 @@ On Error Resume Next
 workbook.SaveAs newFileName
 If Err.Number <> 0 Then
     MsgBox "ファイルの保存中にエラーが発生しました。", vbCritical, "エラー"
-    workbook.Close False
-    excelApp.Quit
-    WScript.Quit
+    GoTo Cleanup
 End If
 On Error GoTo 0
 
-workbook.Close False
-excelApp.Quit
+' 完了通知
+MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
 
-' オブジェクトを解放
+' リソース解放処理
+Cleanup:
+If Not workbook Is Nothing Then workbook.Close False
+If Not excelApp Is Nothing Then excelApp.Quit
 Set sheet = Nothing
 Set workbook = Nothing
 Set excelApp = Nothing
 Set fso = Nothing
 Set regEx = Nothing
 
-' 完了通知
-MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
 WScript.Quit
