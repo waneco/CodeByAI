@@ -80,6 +80,13 @@ End If
 On Error GoTo 0
 
 ' 条件処理
+' 各行のJ列の値とAA列（備考欄）の値を確認し、以下の条件を満たす場合に処理を行います:
+' 条件1: J列の値が "田中たかし" である。
+' 条件2: AA列の値に "課長案件" が含まれている。
+' 処理内容:
+' - AA列の値から "課長" より前の文字列（例: "〇〇〇〇"）を抽出。
+' - 抽出した文字列でJ列の値を更新。
+' - 条件を満たさない場合はJ列の値を変更しない。
 rowCount = sheet.UsedRange.Rows.Count
 For i = 1 To rowCount
     JValue = sheet.Cells(i, "J").Value
