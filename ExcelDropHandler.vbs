@@ -1,12 +1,12 @@
 ' ******************************
 ' プログラム名: ExcelDropHandler.vbs
-' バージョン: 1.3
+' バージョン: 1.4
 ' 作成者: あなたの名前
 ' 作成日: 2024年11月23日
-' 最終更新日: 2024年11月23日
+' 最終更新日: 2024年11月26日
 ' 概要:
 '   このスクリプトはドラッグ＆ドロップされたExcelファイル（.xlsx形式）を処理します。
-'   指定されたシート「Sheet2」を対象に以下の操作を実行します:
+'   シート名が正規表現 "*eet2" に部分一致するシートを対象に指定の操作を実行します。:
 '     - セルC5の値を取得し、セルD6に設定。
 '     - 2行目から5行目を削除。
 '     - C列とE列を削除。
@@ -53,17 +53,23 @@ If Err.Number <> 0 Then
 End If
 On Error GoTo 0
 
-' 指定されたシートを取得
+' 正規表現を使用するための準備
+Set regEx = New RegExp
+regEx.IgnoreCase = True ' 大文字・小文字を区別しない
+regEx.Pattern = ".*eet2$" ' 正規表現: 任意の文字列で始まり、"eet2"で終わる
+
+' 指定されたシートを取得（正規表現で部分一致）
 Set sheet = Nothing
 For Each ws In workbook.Sheets
-    If ws.Name = "Sheet2" Then
+    If regEx.Test(ws.Name) Then
         Set sheet = ws
         Exit For
     End If
 Next
 
+' シートが見つからなかった場合の処理
 If sheet Is Nothing Then
-    MsgBox "指定されたシート 'Sheet2' が見つかりません。", vbExclamation, "エラー"
+    MsgBox "指定されたパターンに一致するシートが見つかりません。", vbExclamation, "エラー"
     workbook.Close False
     excelApp.Quit
     WScript.Quit
@@ -71,7 +77,7 @@ End If
 
 ' 指定された行と列を削除
 On Error Resume Next
-sheet.Rows("2:15").Delete ' 変更された行
+sheet.Rows("2:15").Delete
 sheet.Columns("A").Delete
 sheet.Columns("C").Delete
 If Err.Number <> 0 Then
@@ -120,6 +126,7 @@ Set sheet = Nothing
 Set workbook = Nothing
 Set excelApp = Nothing
 Set fso = Nothing
+Set regEx = Nothing
 
 ' 完了通知
 MsgBox "処理が完了しました。" & vbCrLf & "保存先: " & newFileName, vbInformation, "完了"
