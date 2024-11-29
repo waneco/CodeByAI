@@ -25,9 +25,9 @@
 ' ***********************************************************************
 Option Explicit
 
-' スクリプトの引数やファイル操作関連のオブジェクトを定義
+' スクリプト全体で使用する変数を定義
 Dim objArgs, objFSO, inputFilePath, outputFilePath
-Dim validExtensions, fileExtension, timestamp
+Dim validExtensions, fileExtension, timestamp, encoding
 
 ' サポートするファイル拡張子を定義
 validExtensions = Array(".py", ".bat", ".log", ".txt", ".ps1", ".vbs")
@@ -36,13 +36,22 @@ validExtensions = Array(".py", ".bat", ".log", ".txt", ".ps1", ".vbs")
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 Set objArgs = WScript.Arguments
 
+' ユーザーにエンコーディングを選ばせる（Shift_JIS = 0, UTF-8 = -1）
+encoding = MsgBox("Shift_JISで処理しますか？" & vbCrLf & "「いいえ」を選ぶとUTF-8になります。", _
+                  vbYesNo + vbQuestion, "エンコーディング選択")
+If encoding = vbYes Then
+    encoding = 0 ' Shift_JIS
+Else
+    encoding = -1 ' UTF-8
+End If
+
 ' 引数が渡されていない場合、エラーを表示して終了
 If objArgs.Count = 0 Then
     MsgBox "ファイルがドラッグアンドドロップされていません。スクリプトを終了します。", vbExclamation, "エラー"
     WScript.Quit
 End If
 
-' ドラッグ&ドロップされたファイルごとに処理を実行
+' ドラッグ＆ドロップされたファイルごとに処理を実行
 For Each inputFilePath In objArgs
     If objFSO.FileExists(inputFilePath) Then
         ' ファイルの拡張子を小文字で取得
@@ -53,8 +62,8 @@ For Each inputFilePath In objArgs
             On Error Resume Next
             Dim objFile, fileContent, line, outputLines
             
-            ' ファイルをUTF-8として読み込む
-            Set objFile = objFSO.OpenTextFile(inputFilePath, 1, False, -1)
+            ' ファイルを指定されたエンコーディングで読み込む
+            Set objFile = objFSO.OpenTextFile(inputFilePath, 1, False, encoding)
             If Err.Number <> 0 Then
                 MsgBox "ファイルの読み取り中にエラーが発生しました: " & inputFilePath & vbCrLf & "エラー番号: " & Err.Number, vbCritical, "エラー"
                 Err.Clear
@@ -89,8 +98,8 @@ For Each inputFilePath In objArgs
                 Continue For
             End If
 
-            ' 新しいファイルに書き込み
-            Set objFile = objFSO.CreateTextFile(outputFilePath, True, True) ' UTF-8で書き込む
+            ' 新しいファイルに書き込み（指定されたエンコーディング）
+            Set objFile = objFSO.CreateTextFile(outputFilePath, True, encoding = -1) ' UTF-8ならTrue
             objFile.Write outputLines
             objFile.Close
 
